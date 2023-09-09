@@ -1,4 +1,4 @@
-# Spring Batch (with Spring Boot 3.1.3)
+# Spring Batch 5 (with Spring Boot 3.1.3)
 
 # 아키텍처
 배치 핵심 패턴은 3가지로 볼 수 있다.
@@ -26,3 +26,138 @@
 - 의존관계가 있는 Step 여러 개를 순차적으로 처리
 - 조건적 Flow 구성을 통해 체계적이고 유연한 배치 모델 구성
 - 반복, 재시도, Skip 처리
+
+## 스키마
+- `/org/springframework/batch/core/schema-*.sql` 제공
+- `BatchDataSourceScriptDatabaseInitializer` 가 동작되면 실행되는데 옵션에 따라 달라진다.
+  - `ALWAYS`: 스크립트 항상 실행
+  - `EMBEDDED`: 내장 DB일 때만 실행, 기본값
+  - `NEVER`: 스크립트 항상 실행하지 않음
+    - 이러한 경우 수동으로 제공된 스크립트를 사용하여 스키마를 생성한다.
+
+### Job 테이블
+#### `BATCH_JOB_INSTANCE`
+- Job이 실행될 대 JobInstance 정보가 저장되며 `job_name`과 `job_key`(hash 값)로 하나의 데이터가 저장
+- 동일한 `job_name`과 `job_key`로 중복 저장될 수 없다.
+#### `BATCH_JOB_EXECUTION`
+- Job의 실행정보가 저장되며 Job 생성, 시작, 종료 시간, 실행상태, 메시지 등을 관리
+- `BATCH_JOB_INSTANCE` 테이블과 N:1 관계
+```mysql
+CREATE TABLE BATCH_JOB_EXECUTION  (
+	JOB_EXECUTION_ID BIGINT  NOT NULL PRIMARY KEY ,
+	VERSION BIGINT  , # 업데이트 될 때마다 1씩 증가
+	JOB_INSTANCE_ID BIGINT NOT NULL, 
+	CREATE_TIME DATETIME(6) NOT NULL, # 실행(Execution)이 생성된 시점 기록
+	START_TIME DATETIME(6) DEFAULT NULL , # 실행(Execution)이 시작된 시점 기록
+	END_TIME DATETIME(6) DEFAULT NULL , # 실행이 종료된 시점을 기록하며 Job 실행 도중 오류가 발생해서 Job이 중단된다면 저장되지 않을 수 있음 
+	STATUS VARCHAR(10) , # 실행 상태(BatchStatus) 저장 (COMPLETED, FAILED, STOPPED, ...)
+	EXIT_CODE VARCHAR(2500) , # 실행 종료 코드(ExitStatus)를 저장 (COMPLETED, FAILED, ...)
+	EXIT_MESSAGE VARCHAR(2500) , # Status가 실패일 때 실패 원인 등의 내용을 저장
+	LAST_UPDATED DATETIME(6), # 마지막 실행 시점 기록
+	constraint JOB_INST_EXEC_FK foreign key (JOB_INSTANCE_ID)
+	references BATCH_JOB_INSTANCE(JOB_INSTANCE_ID)
+) ENGINE=InnoDB;
+``` 
+#### `BATCH_JOB_EXECUTION_PARAMS`
+- Job과 함께 실행되는 JobParameter 정보가 저장
+- `BATCH_JOB_EXECUTION` 테이블과 N:1 관계
+```mysql
+CREATE TABLE BATCH_JOB_EXECUTION_PARAMS  (
+	JOB_EXECUTION_ID BIGINT NOT NULL ,
+	PARAMETER_NAME VARCHAR(100) NOT NULL , # 파라미터 키
+	PARAMETER_TYPE VARCHAR(100) NOT NULL , # 파라미터 타입 정보
+	PARAMETER_VALUE VARCHAR(2500) , # 파라미터 값
+	IDENTIFYING CHAR(1) NOT NULL , # 식별 여부
+	constraint JOB_EXEC_PARAMS_FK foreign key (JOB_EXECUTION_ID)
+	references BATCH_JOB_EXECUTION(JOB_EXECUTION_ID)
+) ENGINE=InnoDB;
+```
+#### `BATCH_JOB_EXECUTION_CONTEXT`
+- Job의 실행 동안 여러 가지 상태 정보, 공유 데이터를 직렬화(Json) 해서 저장
+- Step 간 서로 공유 가능
+- `BATCH_JOB_EXECUTION` 테이블과 N:1 관계
+```mysql
+CREATE TABLE BATCH_JOB_EXECUTION_CONTEXT (
+    JOB_EXECUTION_ID   BIGINT        NOT NULL PRIMARY KEY,
+    SHORT_CONTEXT      VARCHAR(2500) NOT NULL, # Job의 실행 상태 정보, 공유 데이터 등의 정보를 문자열로 저장
+    SERIALIZED_CONTEXT TEXT, # 직렬화된 전체 Context
+    constraint JOB_EXEC_CTX_FK foreign key (JOB_EXECUTION_ID)
+        references BATCH_JOB_EXECUTION (JOB_EXECUTION_ID)
+) ENGINE = InnoDB;
+```
+### Step 테이블
+#### `BATCH_STEP_EXECUTION`
+- Step의 실행정보가 저장되며 Job 생성, 시작, 종료 시간, 실행상태, 메시지 등을 관리
+- `BATCH_JOB_EXECUTION` 테이블과 N:1 관계
+```mysql
+CREATE TABLE BATCH_STEP_EXECUTION  (
+	STEP_EXECUTION_ID BIGINT  NOT NULL PRIMARY KEY ,
+	VERSION BIGINT NOT NULL, # 업데이트 될 때마다 1씩 증가
+	STEP_NAME VARCHAR(100) NOT NULL, # Step 이름
+	JOB_EXECUTION_ID BIGINT NOT NULL,
+	CREATE_TIME DATETIME(6) NOT NULL,
+	START_TIME DATETIME(6) DEFAULT NULL ,
+	END_TIME DATETIME(6) DEFAULT NULL ,
+	STATUS VARCHAR(10) ,
+	COMMIT_COUNT BIGINT , # 트랜잭션 당 커밋되는 수를 기록
+	READ_COUNT BIGINT , # 실행 시점에 Read한 Item 수를 기록
+	FILTER_COUNT BIGINT , # 실행 중 필터링된 Item 수를 기록
+	WRITE_COUNT BIGINT , # 실행 중 저장되고 커밋된 Item 수를 기록
+	READ_SKIP_COUNT BIGINT , # 실행 중 Read가 Skip된 Item 수를 기록
+	WRITE_SKIP_COUNT BIGINT , # 실행 중 Write가 Skip된 Item 수를 기록
+	PROCESS_SKIP_COUNT BIGINT , # 실행 중 Process가 Skip된 Item 수를 기록
+	ROLLBACK_COUNT BIGINT , # 실행 중 Rollback이 일어난 수를 기록
+	EXIT_CODE VARCHAR(2500) ,
+	EXIT_MESSAGE VARCHAR(2500) ,
+	LAST_UPDATED DATETIME(6),
+	constraint JOB_EXEC_STEP_FK foreign key (JOB_EXECUTION_ID)
+	references BATCH_JOB_EXECUTION(JOB_EXECUTION_ID)
+) ENGINE=InnoDB;
+```
+#### `BATCH_STEP_EXECUTION_CONTEXT`
+- Step의 실행 동안 여러 가지 상태 정보, 공유 데이터를 직렬화(Json) 해서 저장
+- Step 간 서로 공유할 수 없음
+- `BATCH_STEP_EXECUTION` 테이블과 N:1 관계
+### `BATCH_STEP_EXECUTION_SEQ`
+### `BATCH_JOB_EXECUTION_SEQ`
+### `BATCH_JOB_SEQ`
+
+---
+# 스프링 배치 도메인 이해
+## Job
+- 가장 상위에 있는 개념으로 하나의 배치 작업 자체를 의미한다.
+- 여러 Step을 포함하고 있는 컨테이너로써 반드시 한 개 이상의 Step으로 구성해야 한다.
+### Job
+- SimpleJob
+  - 순차적으로 Step을 실행시킴
+- FlowJob
+  - 특정한 조건과 흐름에 따라 Step을 구성하여 실행시킴
+### JobInstance
+- Job이 실행될 때 생성되는 Job의 논리적 실행 단위 객체, 고유하게 식별 가능한 작업 실행을 나타냄
+- Job의 설정과 구성은 동일하지만, 실행되는 시점에 처리하는 내용은 다르기 때문에 Job의 실행을 구분해야 함
+  - 예) 하루 한 번 배치 Job이 실행된다면, 하루마다 생성되는 JobInstance는 달라야 한다.
+- 생성 및 실행
+  - 처음 시작하는 Job + JobParameters 일 경우 새로운 JobInstance 생성
+  - 이전과 동일한 Job + JobParameters 일 경우 이미 존재하는 JobInstance를 반환
+    - 내부적으로 jobName + jobKey(jobParameters의 해시값)를 가지고 JobInstacne를 가져온다.
+- `BATCH_JOB_INSTANCE` 테이블과 매핑
+  - JOB_NAME과 JOB_KEY(jobParameters 해시값)가 동일한 데이터는 중복해서 저장할 수 없다.
+### JobParameters
+- Job을 실행할 때 함께 포함되어 사용되는 파라미터를 가진 객체
+- Job에 존재할 수 있는 여러개의 JobInstance를 구분하기 위한 용도
+  - JobParameters와 JobInstance는 1:1 관계
+- `BATCH_JOB_EXECUTION_PARAM` 테이블과 매핑
+  - `BATCH_JOB_EXECUTION`과 1:N 관계
+### JobExecution
+- JobInstance에 대한 한번의 시도를 의미하는 객체, Job 실행 중에 발생한 정보들을 저장하고 있다.
+  - 시작 시간, 종료 시간, 상태 속성을 가짐
+- JobExecution은 `FAILED`, `COMPLETED` 등의 실행 결과 상태를 가지고 있다.
+- 실행 상태 결과가 `COMPLETED`이면 완료된 것으로 간주해서 재실행이 불가능
+- 반대로 `FAILED`이면 JobInstance 실행이 완료되지 않은 것으로 간주해서 재실행이 가능하다.
+  - JobParameter가 동일한 값으로 Job을 실행할지라도 JobInstance를 계속 실행할 수 있음
+- 즉, 상태가 COMPLETED가 될 때까지 하나의 JobInstance 내에서 여러번의 시도가 생길 수 있다.
+- `BATCH_JOB_EXECUTION` 테이블과 매핑
+  - JobInstance와 JobExecution은 1:N 관계
+## Step
+## ExecutionContext
+## JobRepository / JobLauncher

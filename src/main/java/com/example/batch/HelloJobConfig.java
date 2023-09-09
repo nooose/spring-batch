@@ -1,12 +1,11 @@
 package com.example.batch;
 
 import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.configuration.support.DefaultBatchConfiguration;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
-import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.boot.autoconfigure.batch.BatchProperties;
@@ -31,7 +30,9 @@ public class HelloJobConfig extends DefaultBatchConfiguration {
     public Step helloStep1(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
         return new StepBuilder("helloStep1", jobRepository)
                 .tasklet((contribution, chunkContext) -> {
-                    System.out.println("Hello, Spring Batch!!");
+                    JobParameters jobParameters = contribution.getStepExecution().getJobExecution().getJobParameters();
+                    String name = jobParameters.getString("name");
+                    System.out.printf("[%s] Step1 was executed!!\n", name);
                     return RepeatStatus.FINISHED;
                 }, transactionManager)
                 .build();
@@ -40,8 +41,10 @@ public class HelloJobConfig extends DefaultBatchConfiguration {
     @Bean
     public Step helloStep2(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
         return new StepBuilder("helloStep2", jobRepository)
-                .tasklet((StepContribution contribution, ChunkContext chunkContext) -> {
-                    System.out.println("Stpe2 executed!!");
+                .tasklet((contribution, chunkContext) -> {
+                    JobParameters jobParameters = contribution.getStepExecution().getJobExecution().getJobParameters();
+                    String name = jobParameters.getString("name");
+                    System.out.printf("[%s] Step2 was executed!!\n", name);
                     return RepeatStatus.FINISHED;
                 }, transactionManager)
                 .build();

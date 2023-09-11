@@ -159,5 +159,41 @@ CREATE TABLE BATCH_STEP_EXECUTION  (
 - `BATCH_JOB_EXECUTION` 테이블과 매핑
   - JobInstance와 JobExecution은 1:N 관계
 ## Step
+- 배치 작업을 어떻게 구성하고 실행할 것인지 Job의 세부 작업을 Task 기반으로 설정하고 명세해 놓은 객체
+- 모든 Job은 하나 이상의 Step으로 구성된다.
+- **구현체**
+  - `TaskletStep`: 가장 기본이 되는 클래스
+  - `PartitionStep`: 멀티 스레드 방식으로 Step을 여러 개로 분리해서 실행
+  - `JobStep`: Step 내에서 Job을 실행하도록 함
+  - `FlowStep`: Step 내에서 Flow를 실행하도록 한다.
+### StepExecution
+- Step 실행 중에 발생한 정보들을 저장하고 있는 객체
+- Step이 매번 시도될 때마다 생성되며 Step별로 생성됨
+- Job이 재시작 하더라도 이미 성공적으로 완료된 Step은 재실행되지 않고 실패한 Step만 실행된다.
+- 이전 단계 Step이 실패해서 다음 Step을 실행하지 않았다면 StepExecution을 생성하지 않는다.
+### StepContribution
+- Chunk 프로세스의 변경 사항을 버퍼링 한 후 StepExecution 상태를 업데이트하는 도메인 객체
+- Chunk 커밋 직전에 StepExecution의 apply 메서드를 호출하여 상태를 업데이트
+- ExitStatus의 기본 종료 코드 외 사용자 정의 종료 코드를 생성해서 적용할 수 있음
 ## ExecutionContext
-## JobRepository / JobLauncher
+- StepExecution 또는 JobExecution 객체의 상태를 저장하는 공유 객체
+- DB에 직렬화된 값으로 저장됨
+- 공유 범위
+  - StepExecution은 Step 간 서로 공유 안됨
+  - JobExecution은 Job 간 서로 공유 안되며 해당 Job의 Step 간 서로 공유됨
+- Job 재시작 시 이미 처리한 Row 데이터는 건너뛰고 이후 수행할 때 상태 정보를 활용
+## JobRepository
+- Job 배치 작업의 수행과 관련된 모든 meta data를 저장
+- JobRepository 설정
+  - JobRepositoryFactoryBean
+    - 많은 사용자가 동시에 접근하는 것이 아니기 때문에 트랜잭션 isolation 레벨이 `SERIALIZEBLE`이다.
+    - 성능 이유, Test 나 프로토타입에 사용하고 싶은 경우에는 DB 타입을 H2로 변경할 수 있다.
+
+## JobLauncher
+- Job을 실행시키는 역할
+  - 동기적 실행 (`SyncTaskExecutor`)
+  - 비동기적 실행 (`SimpleAsyncTaskExecutor`)
+    - 스케줄러에 의한 배치처리에 적합
+    - `TaskExecutorJobLauncher`로 실행시킬 수 있다.
+- Job과 JobParameters를 인자로 받으며 작업을 수행한 후 최종 Client에게 `JobExecution`을 반환한다.
+  - HTTP 요청에 의한 배치저리에 적합(배치처리 시간이 길 경우 응답이 늦어지지 않도록 함)

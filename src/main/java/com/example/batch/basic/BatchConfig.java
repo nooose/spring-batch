@@ -1,4 +1,4 @@
-package com.example.batch;
+package com.example.batch.basic;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.batch.BatchDataSource;

@@ -192,8 +192,8 @@ CREATE TABLE BATCH_STEP_EXECUTION  (
 ## JobLauncher
 - Job을 실행시키는 역할
   - 동기적 실행 (`SyncTaskExecutor`)
-  - 비동기적 실행 (`SimpleAsyncTaskExecutor`)
     - 스케줄러에 의한 배치처리에 적합
+  - 비동기적 실행 (`SimpleAsyncTaskExecutor`)
     - `TaskExecutorJobLauncher`로 실행시킬 수 있다.
+    - HTTP 요청에 의한 배치저리에 적합(배치처리 시간이 길 경우 응답이 늦어지지 않도록 함)
 - Job과 JobParameters를 인자로 받으며 작업을 수행한 후 최종 Client에게 `JobExecution`을 반환한다.
-  - HTTP 요청에 의한 배치저리에 적합(배치처리 시간이 길 경우 응답이 늦어지지 않도록 함)

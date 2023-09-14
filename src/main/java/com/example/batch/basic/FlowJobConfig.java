@@ -2,42 +2,42 @@ package com.example.batch.basic;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.support.DefaultBatchConfiguration;
+import org.springframework.batch.core.job.builder.FlowBuilder;
 import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.job.flow.Flow;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.repeat.RepeatStatus;
-import org.springframework.boot.autoconfigure.batch.BatchProperties;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.transaction.PlatformTransactionManager;
 
 @RequiredArgsConstructor
-@EnableConfigurationProperties(BatchProperties.class)
 @Configuration
-public class HelloJobConfig extends DefaultBatchConfiguration {
+public class FlowJobConfig {
 
-    private final JobExecutionListener jobListener;
-
-    @Primary
     @Bean
-    public Job helloJob(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
-        return new JobBuilder("helloJob", jobRepository)
-                .start(helloStep1(jobRepository, transactionManager))
-                .next(helloStep2(jobRepository, transactionManager))
-                .next(helloStep3(jobRepository, transactionManager))
-                .listener(jobListener)
+    public Job flowJob(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
+        return new JobBuilder("flowJob", jobRepository)
+                .start(flow(jobRepository, transactionManager))
+                .next(step3(jobRepository, transactionManager))
+                .end()
                 .build();
     }
 
     @Bean
-    public Step helloStep1(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
-        return new StepBuilder("helloStep1", jobRepository)
+    public Flow flow(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
+        return new FlowBuilder<Flow>("flow")
+                .start(step1(jobRepository, transactionManager))
+                .next(step2(jobRepository, transactionManager))
+                .end();
+    }
+
+    @Bean
+    public Step step1(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
+        return new StepBuilder("Step1", jobRepository)
                 .tasklet((contribution, chunkContext) -> {
                     JobParameters jobParameters = contribution.getStepExecution().getJobExecution().getJobParameters();
                     String name = jobParameters.getString("name");
@@ -48,8 +48,8 @@ public class HelloJobConfig extends DefaultBatchConfiguration {
     }
 
     @Bean
-    public Step helloStep2(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
-        return new StepBuilder("helloStep2", jobRepository)
+    public Step step2(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
+        return new StepBuilder("Step2", jobRepository)
                 .tasklet((contribution, chunkContext) -> {
                     JobParameters jobParameters = contribution.getStepExecution().getJobExecution().getJobParameters();
                     String name = jobParameters.getString("name");
@@ -60,8 +60,8 @@ public class HelloJobConfig extends DefaultBatchConfiguration {
     }
 
     @Bean
-    public Step helloStep3(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
-        return new StepBuilder("helloStep3", jobRepository)
+    public Step step3(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
+        return new StepBuilder("step3", jobRepository)
                 .tasklet(new CustomTasklet(), transactionManager)
                 .build();
     }

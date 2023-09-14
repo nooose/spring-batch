@@ -1,22 +1,28 @@
 package com.example.batch.basic;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
 
-@RequiredArgsConstructor
 @Component
 public class JobRunner implements ApplicationRunner {
 
     private final JobLauncher jobLauncher;
-    private final Job job;
+    private final Job helloJob;
+    private final Job flowJob;
+
+    public JobRunner(JobLauncher jobLauncher, Job helloJob, @Qualifier("flowJob") Job flowJob) {
+        this.jobLauncher = jobLauncher;
+        this.helloJob = helloJob;
+        this.flowJob = flowJob;
+    }
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
@@ -26,7 +32,11 @@ public class JobRunner implements ApplicationRunner {
         JobParameters jobParametersB = new JobParametersBuilder().addString("name", "userB")
                 .addDate("date", new Date())
                 .toJobParameters();
-        jobLauncher.run(job, jobParametersA);
-        jobLauncher.run(job, jobParametersB);
+        JobParameters jobParametersC = new JobParametersBuilder().addString("name", "userC")
+                .addDate("date", new Date())
+                .toJobParameters();
+        jobLauncher.run(helloJob, jobParametersA);
+        jobLauncher.run(helloJob, jobParametersB);
+        jobLauncher.run(flowJob, jobParametersC);
     }
 }

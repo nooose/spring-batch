@@ -27,7 +27,7 @@ public class JobLauncherController {
     @PostMapping("/members")
     public ResponseEntity<Void> launch(@RequestBody MemberRequest memberRequest) throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobParametersInvalidException, JobRestartException {
         JobParameters jobParameters = new JobParametersBuilder()
-                .addString("id", memberRequest.id())
+                .addString("name", memberRequest.id())
                 .addDate("date", new Date())
                 .toJobParameters();
 
@@ -38,7 +38,7 @@ public class JobLauncherController {
     @PostMapping("/members:async")
     public ResponseEntity<Void> asyncLaunch(@RequestBody MemberRequest memberRequest) throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobParametersInvalidException, JobRestartException {
         JobParameters jobParameters = new JobParametersBuilder()
-                .addString("id", memberRequest.id())
+                .addString("name", memberRequest.id())
                 .addDate("date", new Date())
                 .toJobParameters();
 

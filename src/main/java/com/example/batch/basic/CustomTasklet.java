@@ -11,7 +11,7 @@ public class CustomTasklet implements Tasklet {
     public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
         Thread.sleep(2500);
         JobParameters jobParameters = contribution.getStepExecution().getJobExecution().getJobParameters();
-        String id = jobParameters.getString("id");
+        String id = jobParameters.getString("name");
         System.out.println("Hello " + id);
         return RepeatStatus.FINISHED;
     }

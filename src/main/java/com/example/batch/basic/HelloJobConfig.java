@@ -34,6 +34,7 @@ public class HelloJobConfig extends DefaultBatchConfiguration {
                 .start(helloStep1(jobRepository, transactionManager))
                 .next(helloStep2(jobRepository, transactionManager))
                 .next(helloStep3(jobRepository, transactionManager))
+                .next(helloStep4(jobRepository, transactionManager))
 //                .validator(new CustomJobParametersValidator())
                 .validator(new DefaultJobParametersValidator(new String[]{"name", "date"}, new String[]{"optional"}))
                 .listener(jobListener)
@@ -55,19 +56,26 @@ public class HelloJobConfig extends DefaultBatchConfiguration {
     @Bean
     public Step helloStep2(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
         return new StepBuilder("helloStep2", jobRepository)
-                .tasklet((contribution, chunkContext) -> {
-                    JobParameters jobParameters = contribution.getStepExecution().getJobExecution().getJobParameters();
-                    String name = jobParameters.getString("name");
-                    System.out.printf("[%s] Step2 was executed!!\n", name);
-                    return RepeatStatus.FINISHED;
-                }, transactionManager)
-                .build();
+                .<String, String>chunk(3, transactionManager)
+                .reader(() -> null)
+                .processor(item -> null)
+                .writer(chunk -> {
+
+                }).build();
     }
 
     @Bean
     public Step helloStep3(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
         return new StepBuilder("helloStep3", jobRepository)
                 .tasklet(new CustomTasklet(), transactionManager)
+                .build();
+    }
+
+    @Bean
+    public Step helloStep4(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
+        return new StepBuilder("helloStep4", jobRepository)
+                .partitioner(helloStep1(jobRepository, transactionManager))
+                .gridSize(2)
                 .build();
     }
 }

@@ -197,3 +197,13 @@ CREATE TABLE BATCH_STEP_EXECUTION  (
     - `TaskExecutorJobLauncher`로 실행시킬 수 있다.
     - HTTP 요청에 의한 배치저리에 적합(배치처리 시간이 길 경우 응답이 늦어지지 않도록 함)
 - Job과 JobParameters를 인자로 받으며 작업을 수행한 후 최종 Client에게 `JobExecution`을 반환한다.
+
+---
+# Chunk
+- 여러 개의 아이템을 묶은 하나의 덩어리
+- 하나씩 아이템을 입력 받아 Chunk 단위의 덩어이로 만든 후, Chunk 단위로 트랜잭션을 처리
+- 일반적으로 대용량 데이터를 한번에 처리하는 것이 아닌 청크 단위로 쪼개어서 더 이상 처리할 데이터가 없을 때 까지 반복
+
+- `Chunk<I>` vs `Chunk <O>`
+  - `Chunk<I>`: ItemReader로 읽은 하나의 아이템을 Chunk에서 정한 개수만큼 반복해서 저장하는 타입
+  - `Chunk <O>`: ItemReader로부터 전달받은 `Chunk<I>`를 참조해서 ItemProcessor에서 적절하게 가공, 필터링한 다음 ItemWriter에 전달  

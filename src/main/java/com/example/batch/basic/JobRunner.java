@@ -17,11 +17,13 @@ public class JobRunner implements ApplicationRunner {
     private final JobLauncher jobLauncher;
     private final Job helloJob;
     private final Job flowJob;
+    private final Job chunkJob;
 
-    public JobRunner(JobLauncher jobLauncher, Job helloJob, @Qualifier("flowJob") Job flowJob) {
+    public JobRunner(JobLauncher jobLauncher, Job helloJob, @Qualifier("flowJob") Job flowJob, @Qualifier("chunkJob") Job chunkJob) {
         this.jobLauncher = jobLauncher;
         this.helloJob = helloJob;
         this.flowJob = flowJob;
+        this.chunkJob = chunkJob;
     }
 
     @Override
@@ -35,8 +37,9 @@ public class JobRunner implements ApplicationRunner {
         JobParameters jobParametersC = new JobParametersBuilder().addString("name", "userC")
                 .addDate("date", new Date())
                 .toJobParameters();
-        jobLauncher.run(helloJob, jobParametersA);
-        jobLauncher.run(helloJob, jobParametersB);
-        jobLauncher.run(flowJob, jobParametersC);
+//        jobLauncher.run(helloJob, jobParametersA);
+//        jobLauncher.run(helloJob, jobParametersB);
+//        jobLauncher.run(flowJob, jobParametersC);
+        jobLauncher.run(chunkJob, new JobParameters());
     }
 }

@@ -207,3 +207,7 @@ CREATE TABLE BATCH_STEP_EXECUTION  (
 - `Chunk<I>` vs `Chunk <O>`
   - `Chunk<I>`: ItemReader로 읽은 하나의 아이템을 Chunk에서 정한 개수만큼 반복해서 저장하는 타입
   - `Chunk <O>`: ItemReader로부터 전달받은 `Chunk<I>`를 참조해서 ItemProcessor에서 적절하게 가공, 필터링한 다음 ItemWriter에 전달  
+
+## ItemStream
+- ItemReader, ItemWriter 처리 과정 중 상태를 저장하고 오류가 발생하면 해당 상태를 참조하여 실패한 곳에서 재시작 하도록 지원
+- ExecutionContext를 매개변수로 받아서 상태 정보를 업데이트한다.

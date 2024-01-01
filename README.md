@@ -253,3 +253,13 @@ CREATE TABLE BATCH_STEP_EXECUTION  (
 
 #### JpaPagingItemReader
 - Paging 기반의 JPA 구현체로서 EntityManagerFactory가 필요하며 JPQL을 사용한다
+
+## ItemWriter
+### JdbcBatchItemWriter
+- JdbcCursorItemReader 설정과 마찬가지로 dataSource를 지정하고, SQL 속성에 실행할 쿼리를 설정
+- JDBC Batch 기능을 사용하여 bulk insert/update/delete 방식으로 처리
+- 단건 처리가 아닌 일괄처리이기 때문에 성능에 이점을 가진다
+### JpaItemWriter
+- JPA Entity 기반으로 데이터를 처리하며 EntityManagerFactory를 주입받아 사용
+- Entity를 하나씩 chunk 크기 만큼 insert 혹은 merger 한 다음 flush 함
+- ItemReader 나 ItemProcessor로 부터 아이템을 전달받은 때는 Entity 클래스 타입으로 받아야 함

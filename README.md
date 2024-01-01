@@ -254,6 +254,12 @@ CREATE TABLE BATCH_STEP_EXECUTION  (
 #### JpaPagingItemReader
 - Paging 기반의 JPA 구현체로서 EntityManagerFactory가 필요하며 JPQL을 사용한다
 
+## ItemProcessor
+### CompositeItemProcessor
+- 여러개의 Processor를 체인으로 등록할 수 있다
+### ClassifierCompositeItemProcessor
+- Classifier의 분류조건 따라 맞는 ItemProcessor를 선택
+
 ## ItemWriter
 ### JdbcBatchItemWriter
 - JdbcCursorItemReader 설정과 마찬가지로 dataSource를 지정하고, SQL 속성에 실행할 쿼리를 설정

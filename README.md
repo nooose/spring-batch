@@ -224,9 +224,32 @@ CREATE TABLE BATCH_STEP_EXECUTION  (
 #### JdbcCursorItemReader
 - Thread 안정성을 보장하지 않기 때문에  멀티 스레드 환경에서 사용할 경우 동시성 이슈가 발생하지 않도록 별도 동기화 처리가 필요
 
+#### JpaCursorItemReader
+
+```java
+    return new JpaCursorItemReaderBuilder<T>()
+        .name()
+        .queryString()
+        .entityManagerFactory()
+        .parameterValue()
+        .maxItemCount()
+        .currentItemCount()
+        .build();
+```
+
 ### Paging Based 처리
 - 페이징 단위로 데이터를 조회하는 방식으로 Page Size 만큼 한번에 메모리로 가지고 온 다음 한개씩 읽는다
 - 한 페이지를 읽을때 마다 Connection을 맺고 끊기 때문에 대량의 데이터를 처리하더라도 SocketTimeout 예외가 거의 일어나지 않는다
 - 시작 행 번호를 지정하고 페이지에 반환하고자 하는 행의 수를 지정한 후 사용 - Offset, Litmit
 - 페이징 단위의 결과만 메모리에 할당하기 때문에 메모리 사용량이 적어지는 장점이 있다
 - Connection 연결 유지 시간이 길지 않고 메모리 공간을 효율적으로 사용해야 하는 데이터 처리에 적합할 수 있다
+
+#### JdbcPagingItemReader
+- Paging 기반의 JDBC 구현체로서 쿼리에 시작 행 번호(offset)와 페이지에서 반환 할 행 수(limit)를 지정해서 SQL을 실행
+- 페이징 단위로 조회할 때 마다 새로운 쿼리가 실행
+- 페이지마다 새로운 쿼리를 실행하기 때문에 페이징 시 결과 데이터의 순서가 보장될 수 있도록 `order by` 구문이 작성되도록 한다
+- 멀티 스레드 환경에서 Thread 안정성을 보장하기 때문에 별도의 동기화를 할 필요가 없다
+- `SqlPagingQueryProviderFactoryBean`을 사용하여 쿼리를 전달할 수 있다
+
+#### JpaPagingItemReader
+- Paging 기반의 JPA 구현체로서 EntityManagerFactory가 필요하며 JPQL을 사용한다

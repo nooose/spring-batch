@@ -269,3 +269,20 @@ CREATE TABLE BATCH_STEP_EXECUTION  (
 - JPA Entity 기반으로 데이터를 처리하며 EntityManagerFactory를 주입받아 사용
 - Entity를 하나씩 chunk 크기 만큼 insert 혹은 merger 한 다음 flush 함
 - ItemReader 나 ItemProcessor로 부터 아이템을 전달받은 때는 Entity 클래스 타입으로 받아야 함
+
+--- 
+# 반복 및 오류 제어
+## Repeat
+- 특정 조건이 충족될 때까지 Job 또는 Step을 반복하도록 배치를 구성할 수 있다
+- RepeatOperation을 사용해서 처리
+- 기본 구현체로 `RepeatTemplate`을 제공
+### `RepeatStatus`
+- `CONTINUABLE`: 작업이 남아있음
+- `FINISHED`: 더 이상의 반복 없음
+### `CompletionPolicy`
+- 반복을 중단할지 결정
+- 정상 종료를 알리는데 사용
+### `ExceptionHandler`
+- RepeatCallback 안에서 예외가 발생하면 RepeatTemplate가 ExceptionHandler를 참조해서 예외를 다시 던질지 여부 결정
+- 예외를 받아서 다시 던지게 되면 반복 종료
+- 비정상 종료를 알리는데 사용

@@ -35,6 +35,11 @@ public class ChunkJobConfig {
                 .reader(itemReader())
                 .processor(itemProcessor())
                 .writer(itemWriter())
+                .faultTolerant()
+                .skip(IllegalArgumentException.class)
+                .skipLimit(2)
+                .retry(IllegalArgumentException.class)
+                .retryLimit(2)
                 .build();
     }
 

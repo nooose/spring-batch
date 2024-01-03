@@ -286,3 +286,6 @@ CREATE TABLE BATCH_STEP_EXECUTION  (
 - RepeatCallback 안에서 예외가 발생하면 RepeatTemplate가 ExceptionHandler를 참조해서 예외를 다시 던질지 여부 결정
 - 예외를 받아서 다시 던지게 되면 반복 종료
 - 비정상 종료를 알리는데 사용
+
+## FaultTolerant
+- 오류가 발생해도 Step이 즉시 종료되지 않고 `Retry` 혹은 `Skip` 기능을 활성화함으로써 내결함성 서비스가 가능하도록 한다

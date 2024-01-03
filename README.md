@@ -1,4 +1,4 @@
-# Spring Batch 5 (with Spring Boot 3.1.3)
+# Spring Batch 5 (with Spring Boot 3.2.1)
 
 # 아키텍처
 배치 핵심 패턴은 3가지로 볼 수 있다.

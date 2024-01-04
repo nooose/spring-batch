@@ -289,3 +289,7 @@ CREATE TABLE BATCH_STEP_EXECUTION  (
 
 ## FaultTolerant
 - 오류가 발생해도 Step이 즉시 종료되지 않고 `Retry` 혹은 `Skip` 기능을 활성화함으로써 내결함성 서비스가 가능하도록 한다
+### Skip
+- 데이터를 처리하는 동안 설정된 Exception이 발생했을 경우, 해당 데이터 처리를 건너뛴다
+- ItemReader는 예외가 발생하면 해당 아이템만 Skip하고 계속 진행
+- ItemProcessor와 ItemWriter는 예외가 발생하면 Chunk의 처음으로 돌아가서 Skip된 아이템을 제외한 나머지 아이템들을 가지고 처리

@@ -12,6 +12,8 @@ import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.retry.RetryCallback;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.List;
@@ -50,6 +52,11 @@ public class ChunkJobConfig {
 
     @Bean
     public ItemProcessor<String, String> itemProcessor() {
+        try {
+            retryTemplate().execute((RetryCallback<String, RuntimeException>) context -> null, context -> null);
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
         return new CustomItemProcessor();
     }
 
@@ -66,5 +73,9 @@ public class ChunkJobConfig {
                     return RepeatStatus.FINISHED;
                 }, transactionManager)
                 .build();
+    }
+
+    private RetryTemplate retryTemplate() {
+        return RetryTemplate.builder().build();
     }
 }

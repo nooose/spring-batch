@@ -293,3 +293,7 @@ CREATE TABLE BATCH_STEP_EXECUTION  (
 - 데이터를 처리하는 동안 설정된 Exception이 발생했을 경우, 해당 데이터 처리를 건너뛴다
 - ItemReader는 예외가 발생하면 해당 아이템만 Skip하고 계속 진행
 - ItemProcessor와 ItemWriter는 예외가 발생하면 Chunk의 처음으로 돌아가서 Skip된 아이템을 제외한 나머지 아이템들을 가지고 처리
+### Retry
+- 예외가 발생하면 Step의 처음(Chunk 단계의 처음)으로 돌아가 재시작한다 
+- `RecoveryCallBack`을 사용할 수 있다 (Skip이 선언되어있고 CallBack을 따로 정의하지 않으면 Skip 설정이 실행)
+- `FixedBackOffPolicy`: 어느정도 시간이 지나고 재시도할 수 있게 설정 가능

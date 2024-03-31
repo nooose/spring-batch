@@ -18,12 +18,19 @@ public class JobRunner implements ApplicationRunner {
     private final Job helloJob;
     private final Job flowJob;
     private final Job chunkJob;
+    private final Job fileJob;
 
-    public JobRunner(JobLauncher jobLauncher, Job helloJob, @Qualifier("flowJob") Job flowJob, @Qualifier("chunkJob") Job chunkJob) {
+    public JobRunner(JobLauncher jobLauncher,
+                     Job helloJob,
+                     @Qualifier("flowJob") Job flowJob,
+                     @Qualifier("chunkJob") Job chunkJob,
+                     @Qualifier("fileJob") Job fileJob
+    ) {
         this.jobLauncher = jobLauncher;
         this.helloJob = helloJob;
         this.flowJob = flowJob;
         this.chunkJob = chunkJob;
+        this.fileJob = fileJob;
     }
 
     @Override
@@ -40,6 +47,7 @@ public class JobRunner implements ApplicationRunner {
 //        jobLauncher.run(helloJob, jobParametersA);
 //        jobLauncher.run(helloJob, jobParametersB);
 //        jobLauncher.run(flowJob, jobParametersC);
-        jobLauncher.run(chunkJob, new JobParameters());
+        JobParameters jobParameters = new JobParametersBuilder().addString("requestDate", "20240101").toJobParameters();
+        jobLauncher.run(fileJob, jobParameters);
     }
 }
